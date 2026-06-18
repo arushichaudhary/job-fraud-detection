@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#F6C9DC">
+  <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.svg') }}">
+  <meta name="description" content="TrustSeal checks a job posting for the patterns of real and fraudulent listings, then gives you a clear, sealed verdict.">
+  <title>TrustSeal — Real or Fake Job Classifier</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            cream: { DEFAULT: '#FFF9F4', 100: '#FFFCFA' },
+            blush: { 100: '#FBE4ED', 200: '#F8D5E4', 300: '#F6C9DC', 500: '#EFA8C6', 700: '#D97FA8' },
+            lavender: { 100: '#F1E9FB', 200: '#E4D6F7', 300: '#D8C3F0', 500: '#B79CE0', 700: '#9777C9' },
+            mint: { 100: '#E3F7EE', 200: '#CFF1E2', 300: '#BFE8D4', 500: '#8FD4B3', 700: '#5FB890' },
+            peach: { 100: '#FFEFDD', 300: '#FFD9B0', 500: '#FFBE7D' },
+            plum: { 300: '#8A6E8C', 500: '#6B4F6E', 700: '#4A3047', 800: '#3A2638', 900: '#2E2236' },
+            coral: { 100: '#FCE6E3', 300: '#F7B3AE', 500: '#F2918A', 700: '#E0635C' },
+          },
+          fontFamily: {
+            display: ['"Fraunces"', 'serif'],
+            body: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"Space Mono"', 'monospace'],
+          },
+          boxShadow: {
+            kiss: '0 20px 50px -15px rgba(151, 119, 201, 0.35)',
+            'kiss-sm': '0 8px 24px -8px rgba(151, 119, 201, 0.35)',
+          },
+        },
+      },
+    };
+  </script>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body class="font-body text-plum-700 dark:text-cream bg-cream dark:bg-plum-900 transition-colors duration-500 selection:bg-lavender-300 selection:text-plum-900">
+
+  <!-- ===================== REUSABLE SVG DEFS ===================== -->
+  <svg width="0" height="0" class="absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="gradBlush" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#F6C9DC" /><stop offset="100%" stop-color="#D8C3F0" />
+      </linearGradient>
+      <linearGradient id="gradMint" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#BFE8D4" /><stop offset="100%" stop-color="#D8C3F0" />
+      </linearGradient>
+      <linearGradient id="gradCoral" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#F7B3AE" /><stop offset="100%" stop-color="#F6C9DC" />
+      </linearGradient>
+      <linearGradient id="gradPeach" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#FFD9B0" /><stop offset="100%" stop-color="#F6C9DC" />
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <!-- ===================== NAVBAR ===================== -->
+  <header class="sticky top-0 z-40 px-4 sm:px-6 pt-4">
+    <div class="max-w-6xl mx-auto glass rounded-2xl shadow-kiss-sm px-4 sm:px-6 py-3 flex items-center justify-between">
+      <a href="#top" class="flex items-center gap-2.5 group">
+        <svg width="38" height="38" viewBox="0 0 60 60" class="shrink-0">
+          <circle cx="30" cy="30" r="24" fill="url(#gradBlush)" />
+          <g fill="#FFF9F4" opacity=".9">
+            <circle cx="30" cy="3" r="2.4" /><circle cx="43.5" cy="6.6" r="2.4" /><circle cx="53.4" cy="16.5" r="2.4" />
+            <circle cx="57" cy="30" r="2.4" /><circle cx="53.4" cy="43.5" r="2.4" /><circle cx="43.5" cy="53.4" r="2.4" />
+            <circle cx="30" cy="57" r="2.4" /><circle cx="16.5" cy="53.4" r="2.4" /><circle cx="6.6" cy="43.5" r="2.4" />
+            <circle cx="3" cy="30" r="2.4" /><circle cx="6.6" cy="16.5" r="2.4" /><circle cx="16.5" cy="6.6" r="2.4" />
+          </g>
+          <path d="M30,39 C30,39 16,29.5 16,20.5 C16,14.5 21,11 25.5,14.3 C27.3,15.6 30,18.3 30,18.3 C30,18.3 32.7,15.6 34.5,14.3 C39,11 44,14.5 44,20.5 C44,29.5 30,39 30,39 Z" fill="#FFF9F4" />
+          <circle cx="42" cy="40" r="9" fill="#4A3047" />
+          <path d="M38,40 L41,43 L46.5,36.5" stroke="#FFF9F4" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span class="font-display font-semibold text-xl tracking-tight group-hover:text-blush-700 transition-colors">TrustSeal</span>
+      </a>
+
+      <nav class="hidden md:flex items-center gap-7 font-medium text-sm text-plum-500 dark:text-cream/80">
+        <a href="#how" class="hover:text-plum-700 dark:hover:text-white transition-colors">How it works</a>
+        <a href="#check" class="hover:text-plum-700 dark:hover:text-white transition-colors">Check a posting</a>
+        <a href="#faq" class="hover:text-plum-700 dark:hover:text-white transition-colors">FAQ</a>
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <button id="themeToggle" type="button" aria-label="Toggle light or dusk theme"
+          class="w-10 h-10 grid place-items-center rounded-full glass-soft hover:scale-105 active:scale-95 transition-transform">
+          <svg id="iconSun" width="18" height="18" viewBox="0 0 24 24" fill="none" class="text-plum-700">
+            <circle cx="12" cy="12" r="4.6" fill="#D97FA8" />
+            <g stroke="#D97FA8" stroke-width="1.8" stroke-linecap="round">
+              <path d="M12 2.5v2.6M12 18.9v2.6M4.5 12H1.9M22.1 12h-2.6M5.4 5.4l1.8 1.8M17.8 17.8l1.8 1.8M18.8 5.4l-1.8 1.8M6.2 17.8l-1.8 1.8" />
+            </g>
+          </svg>
+          <svg id="iconMoon" width="18" height="18" viewBox="0 0 24 24" fill="none" class="hidden">
+            <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" fill="#D8C3F0" />
+          </svg>
+        </button>
+        <a href="#check" class="hidden sm:inline-flex items-center rounded-full bg-plum-700 hover:bg-plum-900 dark:bg-blush-500 dark:hover:bg-blush-700 text-cream px-5 py-2.5 text-sm font-semibold tracking-wide transition-all hover:-translate-y-0.5 hover:shadow-kiss-sm">
+          Check a posting
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- ===================== HERO ===================== -->
+    <section class="relative overflow-hidden px-4 sm:px-6 pt-14 sm:pt-20 pb-20">
+      <!-- ambient blobs -->
+      <svg class="absolute -left-24 -top-16 w-[420px] opacity-60 anim-float-slow blur-[2px] -z-10" viewBox="0 0 200 200">
+        <path fill="url(#gradBlush)" d="M44.5,-58.5C56.6,-50.5,63.6,-33.9,66.7,-16.8C69.9,0.3,69.1,17.9,61.4,32.1C53.7,46.3,39.1,57.1,22.7,62.5C6.3,67.9,-11.9,67.9,-28.4,61.8C-44.9,55.7,-59.7,43.5,-66.4,27.7C-73.1,11.9,-71.7,-7.5,-63.9,-23.5C-56.1,-39.5,-41.9,-52.1,-26.1,-59.6C-10.3,-67.1,7.1,-69.5,22.9,-65.7C38.7,-61.9,32.4,-66.5,44.5,-58.5Z" transform="translate(100 100)" />
+      </svg>
+      <svg class="absolute right-[-160px] top-24 w-[460px] opacity-50 anim-float blur-[2px] -z-10" viewBox="0 0 200 200">
+        <path fill="url(#gradMint)" d="M44.5,-58.5C56.6,-50.5,63.6,-33.9,66.7,-16.8C69.9,0.3,69.1,17.9,61.4,32.1C53.7,46.3,39.1,57.1,22.7,62.5C6.3,67.9,-11.9,67.9,-28.4,61.8C-44.9,55.7,-59.7,43.5,-66.4,27.7C-73.1,11.9,-71.7,-7.5,-63.9,-23.5C-56.1,-39.5,-41.9,-52.1,-26.1,-59.6C-10.3,-67.1,7.1,-69.5,22.9,-65.7C38.7,-61.9,32.4,-66.5,44.5,-58.5Z" transform="translate(100 100) rotate(40)" />
+      </svg>
+
+      <div class="max-w-6xl mx-auto grid lg:grid-cols-2 gap-14 items-center">
+        <!-- left -->
+        <div>
+          <span class="anim-fadeup inline-flex items-center gap-2 font-mono text-[11px] tracking-[0.18em] uppercase text-plum-500 dark:text-blush-300 bg-blush-100 dark:bg-white/5 px-3 py-1.5 rounded-full">
+            <span class="w-1.5 h-1.5 rounded-full bg-blush-700"></span> Job posting verifier
+          </span>
+
+          <h1 class="anim-fadeup [animation-delay:.08s] font-display font-semibold text-4xl sm:text-5xl lg:text-[3.4rem] leading-[1.08] mt-5">
+            Know if it's real,
+            <span class="italic grad-text">before</span> you reply.
+          </h1>
+
+          <p class="anim-fadeup [animation-delay:.16s] mt-5 text-lg text-plum-500 dark:text-cream/75 max-w-xl">
+            Paste in the details of any job listing and get an instant read on whether it looks like a genuine opportunity, or a scam dressed up to look like one.
+          </p>
+
+          <div class="anim-fadeup [animation-delay:.24s] mt-8 flex flex-wrap items-center gap-4">
+            <a href="#check" class="inline-flex items-center gap-2 rounded-full bg-plum-700 hover:bg-plum-900 dark:bg-blush-500 dark:hover:bg-blush-700 text-cream px-7 py-3.5 font-semibold tracking-wide transition-all hover:-translate-y-0.5 hover:shadow-kiss">
+              Check a posting
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            </a>
+            <a href="#how" class="inline-flex items-center rounded-full border-2 border-plum-700/20 dark:border-white/20 px-7 py-3.5 font-semibold text-plum-700 dark:text-cream hover:border-plum-700 dark:hover:border-white/60 hover:bg-plum-700/5 dark:hover:bg-white/5 transition-all">
+              See how it works
+            </a>
+          </div>
+
+          <div class="anim-fadeup [animation-delay:.32s] mt-9 flex flex-wrap gap-3 text-xs font-medium text-plum-500 dark:text-cream/70">
+            <span class="glass-soft rounded-full px-3.5 py-2">⚡ Instant verdict</span>
+            <span class="glass-soft rounded-full px-3.5 py-2">🔍 Works on any listing</span>
+            <span class="glass-soft rounded-full px-3.5 py-2">🌷 Free to use</span>
+          </div>
+        </div>
+
+        <!-- right: illustration -->
+        <div class="relative anim-fadeup [animation-delay:.2s]">
+          <div class="relative mx-auto max-w-sm">
+            <div class="absolute -top-7 -left-7 w-20 h-20 anim-float">
+              <svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="url(#gradPeach)" /><path d="M30,39 C30,39 16,29.5 16,20.5 C16,14.5 21,11 25.5,14.3 C27.3,15.6 30,18.3 30,18.3 C30,18.3 32.7,15.6 34.5,14.3 C39,11 44,14.5 44,20.5 C44,29.5 30,39 30,39 Z" fill="#fff" opacity=".9" /></svg>
+            </div>
+            <div class="relative glass rounded-[28px] shadow-kiss p-6 overflow-hidden">
+              <div class="flex items-center gap-2 mb-5">
+                <span class="w-2.5 h-2.5 rounded-full bg-coral-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-peach-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-mint-500"></span>
+                <span class="ml-2 font-mono text-[11px] tracking-wide text-plum-500 dark:text-cream/60">scanning_posting.txt</span>
+              </div>
+              <div class="relative space-y-2.5 overflow-hidden rounded-xl">
+                <div id="scanline"></div>
+                <div class="h-3 rounded-full bg-blush-200 dark:bg-white/10 w-3/4"></div>
+                <div class="h-3 rounded-full bg-lavender-200 dark:bg-white/10 w-full"></div>
+                <div class="h-3 rounded-full bg-mint-200 dark:bg-white/10 w-5/6"></div>
+                <div class="h-3 rounded-full bg-peach-100 dark:bg-white/10 w-2/3"></div>
+                <div class="h-3 rounded-full bg-blush-200 dark:bg-white/10 w-full"></div>
+                <div class="h-3 rounded-full bg-lavender-200 dark:bg-white/10 w-4/6"></div>
+              </div>
+              <div class="mt-6 flex items-center justify-between">
+                <span class="font-mono text-[11px] text-plum-500 dark:text-cream/60">12 signals checked</span>
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold text-mint-700 bg-mint-100 dark:bg-mint-700/20 dark:text-mint-300 rounded-full px-3 py-1.5">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 13l4 4L19 7" /></svg>
+                  sealed
+                </span>
+              </div>
+            </div>
+            <div class="absolute -bottom-6 -right-5 w-16 h-16 anim-float-slow">
+              <svg viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="url(#gradMint)" /><path d="M30,39 C30,39 16,29.5 16,20.5 C16,14.5 21,11 25.5,14.3 C27.3,15.6 30,18.3 30,18.3 C30,18.3 32.7,15.6 34.5,14.3 C39,11 44,14.5 44,20.5 C44,29.5 30,39 30,39 Z" fill="#fff" opacity=".9" /></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== HOW IT WORKS ===================== -->
+    <section id="how" class="px-4 sm:px-6 py-16">
+      <div class="max-w-6xl mx-auto">
+        <div class="max-w-xl mb-12">
+          <span class="font-mono text-[11px] tracking-[0.18em] uppercase text-lavender-700 dark:text-lavender-300">The process</span>
+          <h2 class="font-display font-semibold text-3xl sm:text-4xl mt-2">Three steps to a sealed verdict</h2>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6">
+          <div class="glass-soft rounded-3xl p-7 hover:-translate-y-1.5 hover:shadow-kiss-sm transition-all duration-300">
+            <span class="font-mono text-3xl text-blush-500">01</span>
+            <h3 class="font-display font-semibold text-xl mt-4 mb-2">Paste the details</h3>
+            <p class="text-sm text-plum-500 dark:text-cream/70">Add the job title, company details, and the full description, just as it was sent to you.</p>
+          </div>
+          <div class="glass-soft rounded-3xl p-7 hover:-translate-y-1.5 hover:shadow-kiss-sm transition-all duration-300">
+            <span class="font-mono text-3xl text-lavender-500">02</span>
+            <h3 class="font-display font-semibold text-xl mt-4 mb-2">We read between the lines</h3>
+            <p class="text-sm text-plum-500 dark:text-cream/70">A model trained on real and fraudulent listings checks the wording, requirements, and structure.</p>
+          </div>
+          <div class="glass-soft rounded-3xl p-7 hover:-translate-y-1.5 hover:shadow-kiss-sm transition-all duration-300">
+            <span class="font-mono text-3xl text-mint-500">03</span>
+            <h3 class="font-display font-semibold text-xl mt-4 mb-2">Get your sealed verdict</h3>
+            <p class="text-sm text-plum-500 dark:text-cream/70">A clear verified or flagged stamp opens right away, so you know where you stand.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CHECK / FORM SECTION ===================== -->
+    <section id="check" class="px-4 sm:px-6 py-16">
+      <div class="max-w-6xl mx-auto">
+        <div class="max-w-xl mb-10">
+          <span class="font-mono text-[11px] tracking-[0.18em] uppercase text-blush-700 dark:text-blush-300">Run a check</span>
+          <h2 class="font-display font-semibold text-3xl sm:text-4xl mt-2">Tell us about the posting</h2>
+          <p class="text-plum-500 dark:text-cream/70 mt-3">The more detail you add, especially in the description, the sharper the read.</p>
+        </div>
+
+        <div class="grid lg:grid-cols-[320px_1fr] gap-7">
+          <!-- ASIDE -->
+          <aside class="space-y-6 lg:sticky lg:top-28 self-start">
+            <!-- progress card -->
+            <div class="glass rounded-3xl p-6 shadow-kiss-sm">
+              <div class="flex items-center gap-4">
+                <svg width="64" height="64" viewBox="0 0 64 64" class="-rotate-90 shrink-0">
+                  <circle cx="32" cy="32" r="27" fill="none" stroke-width="6" class="ring-track" />
+                  <circle id="ringFill" cx="32" cy="32" r="27" fill="none" stroke-width="6" stroke="#9777C9" stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="169.6" style="transition: stroke-dashoffset .5s ease;" />
+                </svg>
+                <div>
+                  <p class="font-display font-semibold text-lg leading-none"><span id="ringPct">0</span>%</p>
+                  <p class="text-xs text-plum-500 dark:text-cream/60 mt-1">detail completeness</p>
+                </div>
+              </div>
+              <p id="ringNote" class="text-sm mt-4 text-plum-500 dark:text-cream/70">Add a few details below to begin.</p>
+            </div>
+
+            <!-- sample fill card -->
+            <div class="glass-soft rounded-3xl p-6">
+              <h3 class="font-display font-semibold text-base mb-1">Try it instantly</h3>
+              <p class="text-xs text-plum-500 dark:text-cream/65 mb-4">Load a sample listing to see the form (and the verdict) in action.</p>
+              <div class="flex flex-col gap-2.5">
+                <button type="button" id="fillGood" class="text-sm font-semibold rounded-full bg-mint-100 dark:bg-mint-700/25 text-mint-700 dark:text-mint-300 px-4 py-2.5 hover:-translate-y-0.5 transition-transform">
+                  Load a genuine-looking sample
+                </button>
+                <button type="button" id="fillBad" class="text-sm font-semibold rounded-full bg-coral-100 dark:bg-coral-700/25 text-coral-700 dark:text-coral-300 px-4 py-2.5 hover:-translate-y-0.5 transition-transform">
+                  Load a suspicious sample
+                </button>
+                <button type="button" id="clearForm" class="text-sm font-medium rounded-full border border-plum-700/15 dark:border-white/15 px-4 py-2.5 hover:bg-plum-700/5 dark:hover:bg-white/5 transition-colors">
+                  Clear the form
+                </button>
+              </div>
+            </div>
+
+            <!-- red flag tips -->
+            <div class="glass-soft rounded-3xl p-6">
+              <h3 class="font-display font-semibold text-base mb-3">Common red flags</h3>
+              <ul class="space-y-2.5 text-sm text-plum-500 dark:text-cream/75">
+                <li class="flex gap-2.5"><span class="text-coral-500 font-bold">·</span>Asks for payment or banking details upfront</li>
+                <li class="flex gap-2.5"><span class="text-coral-500 font-bold">·</span>Vague duties paired with big promises</li>
+                <li class="flex gap-2.5"><span class="text-coral-500 font-bold">·</span>Pressure to decide immediately</li>
+                <li class="flex gap-2.5"><span class="text-coral-500 font-bold">·</span>Contact only through chat apps, no work email</li>
+              </ul>
+            </div>
+          </aside>
+
+          <!-- FORM CARD -->
+          <div class="glass rounded-[28px] shadow-kiss p-6 sm:p-9">
+            <form id="jobForm" action="{{ url_for('submit') }}" method="POST" enctype="multipart/form-data" class="space-y-7">
+
+              <div>
+                <p class="font-mono text-[11px] tracking-[0.16em] uppercase text-plum-500 dark:text-cream/55 mb-3">The basics</p>
+                <div class="grid sm:grid-cols-2 gap-4">
+                  <input type="text" class="field" id="title" name="title" placeholder="Job title">
+                  <input type="text" class="field" id="location" name="location" placeholder="Location">
+                  <input type="text" class="field" id="department" name="department" placeholder="Department">
+                  <input type="text" class="field" id="ben" name="ben" placeholder="Benefits">
+                </div>
+              </div>
+
+              <div>
+                <p class="font-mono text-[11px] tracking-[0.16em] uppercase text-plum-500 dark:text-cream/55 mb-3">Role details</p>
+                <div class="grid sm:grid-cols-2 gap-4">
+                  <select name="emptype" id="emptype" required class="field">
+                    <option selected disabled value="">Employment type</option>
+                    <option value="Fulltime">Full-Time</option>
+                    <option value="Part Time">Part-Time</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Temporary">Temporary</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <select name="exp" id="exp" required class="field">
+                    <option selected disabled value="">Required experience</option>
+                    <option value="Internship">Internship</option>
+                    <option value="Mid-senior level">Mid-Senior Level</option>
+                    <option value="Associate">Associate</option>
+                    <option value="Entry level">Entry level</option>
+                    <option value="Executive">Executive</option>
+                    <option value="Director">Director</option>
+                    <option value="Not applicable">Not applicable</option>
+                    <option value="Other">Other</option>
+                  </select>
+                  <input type="text" class="field" id="edu" name="edu" placeholder="Required education">
+                  <input type="text" class="field" id="indu" name="indu" placeholder="Industry">
+                  <input type="text" class="field sm:col-span-2" id="func" name="func" placeholder="Function">
+                </div>
+              </div>
+
+              <div class="space-y-4">
+                <p class="font-mono text-[11px] tracking-[0.16em] uppercase text-plum-500 dark:text-cream/55">The full picture</p>
+
+                <div>
+                  <textarea class="field" id="profile" name="profile" rows="3" placeholder="Company profile"></textarea>
+                  <p class="text-[11px] text-plum-500 dark:text-cream/50 mt-1.5 pl-1"><span id="profileCount">0</span> characters</p>
+                </div>
+                <div>
+                  <textarea class="field" id="req" name="req" rows="3" placeholder="Requirements"></textarea>
+                  <p class="text-[11px] text-plum-500 dark:text-cream/50 mt-1.5 pl-1"><span id="reqCount">0</span> characters</p>
+                </div>
+                <div>
+                  <textarea class="field" id="des" name="des" rows="4" placeholder="Description"></textarea>
+                  <p class="text-[11px] text-plum-500 dark:text-cream/50 mt-1.5 pl-1"><span id="desCount">0</span> characters — more detail here helps the most</p>
+                </div>
+              </div>
+
+              <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 rounded-full bg-plum-700 hover:bg-plum-900 dark:bg-blush-500 dark:hover:bg-blush-700 text-cream px-9 py-4 font-semibold tracking-wide text-base transition-all hover:-translate-y-0.5 hover:shadow-kiss active:scale-[.98]">
+                Run verification
+                <svg width="17" height="17" viewBox="0 0 60 60" class="shrink-0">
+                  <circle cx="30" cy="30" r="24" fill="#FFF9F4" opacity=".25" />
+                  <path d="M21,31 L27,37 L40,23" stroke="#FFF9F4" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FAQ ===================== -->
+    <section id="faq" class="px-4 sm:px-6 py-16">
+      <div class="max-w-3xl mx-auto">
+        <div class="mb-10">
+          <span class="font-mono text-[11px] tracking-[0.18em] uppercase text-mint-700 dark:text-mint-300">Good to know</span>
+          <h2 class="font-display font-semibold text-3xl sm:text-4xl mt-2">A few questions, answered</h2>
+        </div>
+        <div class="space-y-3">
+          <details class="glass-soft rounded-2xl px-6 py-5 group" open>
+            <summary class="flex items-center justify-between font-display font-semibold text-lg">
+              What does "fraudulent" mean here?
+              <svg class="chev transition-transform shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6" /></svg>
+            </summary>
+            <p class="text-sm text-plum-500 dark:text-cream/70 mt-3">It means the listing shares strong patterns with known fake job postings: vague duties, requests for money, or urgent pressure. Treat it as a signal, not a guarantee, and still use your own judgement.</p>
+          </details>
+          <details class="glass-soft rounded-2xl px-6 py-5 group">
+            <summary class="flex items-center justify-between font-display font-semibold text-lg">
+              What should I fill in?
+              <svg class="chev transition-transform shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6" /></svg>
+            </summary>
+            <p class="text-sm text-plum-500 dark:text-cream/70 mt-3">As many fields as you can. The description and requirements give the model the most to work with, so don't leave those short if you can avoid it.</p>
+          </details>
+          <details class="glass-soft rounded-2xl px-6 py-5 group">
+            <summary class="flex items-center justify-between font-display font-semibold text-lg">
+              Is this a substitute for my own research?
+              <svg class="chev transition-transform shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6" /></svg>
+            </summary>
+            <p class="text-sm text-plum-500 dark:text-cream/70 mt-3">No, think of it as a second opinion. Still look the company up separately, and never pay anyone to "secure" a job offer.</p>
+          </details>
+          <details class="glass-soft rounded-2xl px-6 py-5 group">
+            <summary class="flex items-center justify-between font-display font-semibold text-lg">
+              What happens after I submit?
+              <svg class="chev transition-transform shrink-0" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6" /></svg>
+            </summary>
+            <p class="text-sm text-plum-500 dark:text-cream/70 mt-3">The details are run through the classifier and a sealed verdict opens right away, marked either verified or flagged.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="px-4 sm:px-6 pb-10 pt-6">
+    <div class="max-w-6xl mx-auto glass-soft rounded-2xl px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-plum-500 dark:text-cream/65">
+      <div class="flex items-center gap-2">
+        <svg width="24" height="24" viewBox="0 0 60 60"><circle cx="30" cy="30" r="24" fill="url(#gradBlush)" /><path d="M30,39 C30,39 16,29.5 16,20.5 C16,14.5 21,11 25.5,14.3 C27.3,15.6 30,18.3 30,18.3 C30,18.3 32.7,15.6 34.5,14.3 C39,11 44,14.5 44,20.5 C44,29.5 30,39 30,39 Z" fill="#fff" /></svg>
+        <span class="font-display font-semibold">TrustSeal</span>
+      </div>
+      <p class="text-center">A second opinion, not a verdict from a lawyer. Always use your own judgement too.</p>
+      <div class="credit-badge inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-blush-100 to-lavender-100 dark:from-white/10 dark:to-white/10 px-4 py-2 text-xs font-semibold text-plum-700 dark:text-cream/85 cursor-default hover:shadow-kiss-sm transition-shadow">
+        <svg class="heart-icon shrink-0" width="13" height="13" viewBox="0 0 24 24">
+          <path d="M12 21s-7-4.35-9.5-8.5C0.7 9 1.8 5.5 5 4.2 7.4 3.2 9.8 4 12 6.5 14.2 4 16.6 3.2 19 4.2 22.2 5.5 23.3 9 21.5 12.5 19 16.65 12 21 12 21z" fill="#D97FA8" />
+        </svg>
+        Crafted with care by Aarushi
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===================== RESULT MODAL (server-rendered from result / fake_prob / real_prob / risk) ===================== -->
+  {% if result %}
+  <div id="myModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-plum-900/50 backdrop-blur-sm">
+    <div class="anim-stamp relative max-w-sm w-full glass rounded-[28px] shadow-kiss p-8 text-center">
+      <button type="button" class="modal-close absolute top-4 right-4 w-8 h-8 grid place-items-center rounded-full hover:bg-plum-700/10 dark:hover:bg-white/10 transition-colors" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+      </button>
+
+      {% if risk == 'HIGH' %}
+      <svg width="84" height="84" viewBox="0 0 60 60" class="mx-auto mb-5">
+        <circle cx="30" cy="30" r="24" fill="url(#gradCoral)" />
+        <g fill="#FFF9F4" opacity=".95">
+          <circle cx="30" cy="3" r="2.4" /><circle cx="43.5" cy="6.6" r="2.4" /><circle cx="53.4" cy="16.5" r="2.4" />
+          <circle cx="57" cy="30" r="2.4" /><circle cx="53.4" cy="43.5" r="2.4" /><circle cx="43.5" cy="53.4" r="2.4" />
+          <circle cx="30" cy="57" r="2.4" /><circle cx="16.5" cy="53.4" r="2.4" /><circle cx="6.6" cy="43.5" r="2.4" />
+          <circle cx="3" cy="30" r="2.4" /><circle cx="6.6" cy="16.5" r="2.4" /><circle cx="16.5" cy="6.6" r="2.4" />
+        </g>
+        <path d="M30,39 C30,39 16,29.5 16,20.5 C16,14.5 21,11 25.5,14.3 C27.3,15.6 30,18.3 30,18.3 C30,18.3 32.7,15.6 34.5,14.3 C39,11 44,14.5 44,20.5 C44,29.5 30,39 30,39 Z" fill="#FFF9F4" />
+        <circle cx="42" cy="40" r="9" fill="#E0635C" />
+        <path d="M38.5,36.5 L45.5,43.5 M45.5,36.5 L38.5,43.5" stroke="#FFF9F4" stroke-width="2.4" fill="none" stroke-linecap="round" />
+      </svg>
+      <span class="inline-block text-[11px] font-mono tracking-wide uppercase bg-coral-100 dark:bg-coral-700/25 text-coral-700 dark:text-coral-300 rounded-full px-3 py-1 mb-3">{{ risk }} risk</span>
+      <h3 class="font-display font-semibold text-2xl text-coral-700">{{ result.rsplit(' ', 1)[0] }}</h3>
+      <p class="text-sm text-plum-500 dark:text-cream/70 mt-3">This posting shares strong patterns with known fraudulent listings. Don't share payment or banking details, and verify the company independently before going further.</p>
+      {% elif risk == 'MEDIUM' %}
+      <svg width="84" height="84" viewBox="0 0 60 60" class="mx-auto mb-5">
+        <circle cx="30" cy="30" r="24" fill="url(#gradPeach)" />
+        <g fill="#FFF9F4" opacity=".95">
+          <circle cx="30" cy="3" r="2.4" /><circle cx="43.5" cy="6.6" r="2.4" /><circle cx="53.4" cy="16.5" r="2.4" />
+          <circle cx="57" cy="30" r="2.4" /><circle cx="53.4" cy="43.5" r="2.4" /><circle cx="43.5" cy="53.4" r="2.4" />
+          <circle cx="30" cy="57" r="2.4" /><circle cx="16.5" cy="53.4" r="2.4" /><circle cx="6.6" cy="43.5" r="2.4" />
+          <circle cx="3" cy="30" r="2.4" /><circle cx="6.6" cy="16.5" r="2.4" /><circle cx="16.5" cy="6.6" r="2.4" />
+        </g>
+        <path d="M30,39 C30,39 16,29.5 16,20.5 C16,14.5 21,11 25.5,14.3 C27.3,15.6 30,18.3 30,18.3 C30,18.3 32.7,15.6 34.5,14.3 C39,11 44,14.5 44,20.5 C44,29.5 30,39 30,39 Z" fill="#FFF9F4" />
+        <circle cx="42" cy="40" r="9" fill="#E0A458" />
+        <path d="M42,35.5 L42,40.5 M42,43.5 L42,44" stroke="#FFF9F4" stroke-width="2.4" fill="none" stroke-linecap="round" />
+      </svg>
+      <span class="inline-block text-[11px] font-mono tracking-wide uppercase bg-peach-100 dark:bg-peach-300/20 text-[#B5793A] dark:text-peach-300 rounded-full px-3 py-1 mb-3">{{ risk }} risk</span>
+      <h3 class="font-display font-semibold text-2xl text-[#B5793A]">{{ result.rsplit(' ', 1)[0] }}</h3>
+      <p class="text-sm text-plum-500 dark:text-cream/70 mt-3">This posting has a mix of signals, some look genuine, others raise questions. Worth a closer look and an independent check before applying.</p>
+      {% else %}
+      <svg width="84" height="84" viewBox="0 0 60 60" class="mx-auto mb-5">
+        <circle cx="30" cy="30" r="24" fill="url(#gradMint)" />
+        <g fill="#FFF9F4" opacity=".95">
+          <circle cx="30" cy="3" r="2.4" /><circle cx="43.5" cy="6.6" r="2.4" /><circle cx="53.4" cy="16.5" r="2.4" />
+          <circle cx="57" cy="30" r="2.4" /><circle cx="53.4" cy="43.5" r="2.4" /><circle cx="43.5" cy="53.4" r="2.4" />
+          <circle cx="30" cy="57" r="2.4" /><circle cx="16.5" cy="53.4" r="2.4" /><circle cx="6.6" cy="43.5" r="2.4" />
+          <circle cx="3" cy="30" r="2.4" /><circle cx="6.6" cy="16.5" r="2.4" /><circle cx="16.5" cy="6.6" r="2.4" />
+        </g>
+        <path d="M30,39 C30,39 16,29.5 16,20.5 C16,14.5 21,11 25.5,14.3 C27.3,15.6 30,18.3 30,18.3 C30,18.3 32.7,15.6 34.5,14.3 C39,11 44,14.5 44,20.5 C44,29.5 30,39 30,39 Z" fill="#FFF9F4" />
+        <circle cx="42" cy="40" r="9" fill="#5FB890" />
+        <path d="M38,40 L41,43 L46.5,36.5" stroke="#FFF9F4" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <span class="inline-block text-[11px] font-mono tracking-wide uppercase bg-mint-100 dark:bg-mint-700/25 text-mint-700 dark:text-mint-300 rounded-full px-3 py-1 mb-3">{{ risk }} risk</span>
+      <h3 class="font-display font-semibold text-2xl text-mint-700">{{ result.rsplit(' ', 1)[0] }}</h3>
+      <p class="text-sm text-plum-500 dark:text-cream/70 mt-3">This posting matches patterns seen in genuine job listings. It's still worth a quick independent check on the company before you apply.</p>
+      {% endif %}
+
+      <div class="mt-6 space-y-3 text-left">
+        <div>
+          <div class="flex items-center justify-between text-xs font-medium text-plum-500 dark:text-cream/70 mb-1">
+            <span>Looks genuine</span><span>{{ real_prob }}%</span>
+          </div>
+          <div class="h-2.5 rounded-full bg-plum-700/10 dark:bg-white/10 overflow-hidden">
+            <div class="h-full rounded-full bg-mint-500" style="width: {{ real_prob }}%;"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between text-xs font-medium text-plum-500 dark:text-cream/70 mb-1">
+            <span>Fraud risk</span><span>{{ fake_prob }}%</span>
+          </div>
+          <div class="h-2.5 rounded-full bg-plum-700/10 dark:bg-white/10 overflow-hidden">
+            <div class="h-full rounded-full bg-coral-500" style="width: {{ fake_prob }}%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="modal-close mt-7 w-full rounded-full bg-plum-700 hover:bg-plum-900 dark:bg-blush-500 dark:hover:bg-blush-700 text-cream px-6 py-3 font-semibold tracking-wide transition-all hover:-translate-y-0.5">
+        Got it
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

@@ -1,89 +1,105 @@
-# 🔍 Fraud Detection in Job Postings using NLP and Machine Learning
+# 🕵️ Job Fraud Detection
 
-## Overview 📖
+An NLP-powered web app that analyzes job postings and flags potentially fraudulent listings in real time — built to help job seekers spot scams before they apply.
 
-This project leverages Natural Language Processing (NLP) and Machine Learning to detect fraudulent job postings. The system processes job posting data, extracts relevant features, and classifies the postings as either fraudulent or legitimate.
+**🔗 Live Demo:** [job-fraud-detection-bxfa.onrender.com](https://job-fraud-detection-bxfa.onrender.com/)
 
-![image](https://github.com/ervenderr/Fraud-Detection-in-Job-Postings-using-NLP-and-Machine-Learning/assets/81071981/ac160a5c-e21a-493b-92a9-fb2176b739e2)
+---
 
+## 📌 Overview
 
-## ⚙️ Tech Stack
+Online job scams are a real and growing problem — fake postings are used to harvest personal data, charge bogus "processing fees," or run phishing schemes. This project uses a machine learning model trained on ~18,000 labeled job postings to classify a listing as **Genuine**, **Suspicious**, or **Fraudulent**, giving users an instant risk assessment before they engage with a job ad.
 
-- Python
-- Jupyter Notebook
-- Flask
-- HTML/CSS
-- scikit-learn
-- pandas
-- nltk
+## ✨ Features
 
-## Features ✨
+- 📝 Input a full job posting — title, location, department, description, requirements, benefits, employment type, experience, education, industry, and function
+- ⚡ Instant **three-tier verdict**: Genuine (low risk) / Suspicious (medium risk) / Fraudulent (high risk)
+- 📊 Live confidence breakdown showing the exact probability split between real and fake
+- 🧪 Preloaded sample postings (genuine + suspicious) to test the classifier without typing everything manually
+- 🎯 Real-time input completion tracker so users know how much detail is needed for an accurate prediction
 
-- **Data Preprocessing**: Cleans and preprocesses job posting data for analysis.
-- **Feature Extraction**: Utilizes NLP techniques to extract features from text data.
-- **Model Training**: Implements machine learning algorithms to classify job postings.
-- **Web Interface**: Provides a user-friendly interface for interacting with the classifier.
+## 🛠️ Tech Stack
 
-## Requirements 🛠️
+| Layer | Tools |
+|---|---|
+| Backend | Python, Flask |
+| Machine Learning | scikit-learn, TF-IDF Vectorizer |
+| Frontend | HTML, Tailwind CSS, Vanilla JS |
+| Deployment | Render |
 
-- Python 3.7+
-- Jupyter Notebook
-- Flask
+## 🧠 Model & Approach
 
-## Installation 📦
+Job posting text (title, description, requirements, benefits, etc.) is combined and transformed into numerical features using **TF-IDF vectorization**, then passed to a probabilistic classifier trained to distinguish genuine postings from fraudulent ones. The model outputs a probability score via `predict_proba`, which is used to generate the three-tier risk verdict and confidence breakdown shown to the user.
 
-1. Clone the repository:
-    ```sh
-    git clone https://github.com/ervenderr/Fraud-Detection-in-Job-Postings-using-NLP-and-Machine-Learning.git
-    cd Fraud-Detection-in-Job-Postings-using-NLP-and-Machine-Learning
-    ```
+> *Exact algorithm (Logistic Regression / Naive Bayes) documented in `model.py`.*
 
-2. Install the required packages:
-    ```sh
-    pip install -r requirements.txt
-    ```
+## 📂 Dataset
 
-3. Download the `nltk` data:
-    ```python
-    import nltk
-    nltk.download('all')
-    ```
+Trained on the **[EMSCAD — Real or Fake Job Postings](https://www.kaggle.com/datasets/shivamb/real-or-fake-fake-jobposting-prediction)** dataset from Kaggle: ~18,000 labeled job listings with a binary `fraudulent` target column, covering both real and fake postings across industries.
 
-4. Run the Jupyter notebook to preprocess the data and train the model:
-    ```sh
-    jupyter notebook jupyter/preprocess_and_train.ipynb
-    ```
+## 📈 Results
 
-## Usage 🚀
+| Metric | Score |
+|---|---|
+| Accuracy | *TBD* |
+| Precision | *TBD* |
+| Recall | *TBD* |
+| F1-Score | *TBD* |
 
-1. **Run the Flask application**:
-    ```sh
-    python app.py
-    ```
+*Fill in from `classification_report` / `accuracy_score` output in [`jupyter/preprocess_and_train.ipynb`](./jupyter/preprocess_and_train.ipynb).*
 
-2. **Access the web interface**:
-    - Open your browser and go to `http://localhost:5000`.
+## 🚀 Getting Started
 
-3. **Classify Job Postings**:
-    - Use the web interface to input job postings and receive classification results.
+### Prerequisites
+- Python 3.8+
+- pip
 
-## File Structure 🗂️
+### Installation
 
-- `app.py`: Flask application script.
-- `jupyter/`: Jupyter notebooks for data preprocessing and model training.
-- `static/`: Static assets like CSS and images.
-- `templates/`: HTML templates for the web interface.
-- `model.py`: Script for building and evaluating the machine learning model.
-- `requirements.txt`: List of required Python packages.
+```bash
+# Clone the repo
+git clone https://github.com/arushichaudhary/job-fraud-detection.git
+cd job-fraud-detection
 
-## Contributing 🤝
+# Create a virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-1. Fork the repository.
-2. Create a new branch (`git checkout -b feature-branch`).
-3. Commit your changes (`git commit -am 'Add new feature'`).
-4. Push to the branch (`git push origin feature-branch`).
-5. Create a new Pull Request.
+# Install dependencies
+pip install -r requirements.txt
 
-## Acknowledgments 🙏
+# Run the app
+python app.py
+```
 
-- Thanks to all contributors and open-source libraries used in this project.
+Then open `http://localhost:5000` in your browser.
+
+## 📁 Project Structure
+
+```
+job-fraud-detection/
+├── app.py                              # Flask application
+├── model.py                            # ML model loading & prediction logic
+├── jupyter/
+│   └── preprocess_and_train.ipynb      # Data preprocessing & model training
+├── static/                             # CSS/JS assets
+├── templates/                          # HTML templates
+├── requirements.txt
+└── README.md
+```
+
+## 🔮 Future Improvements
+
+- [ ] Add SHAP/LIME explainability to show *why* a posting was flagged
+- [ ] Support bulk CSV upload for batch checking multiple postings
+- [ ] Browser extension to check job postings directly on LinkedIn/Indeed
+- [ ] Expand training data with more recent postings for better generalization
+
+## 👤 Author
+
+**Aarushi Chaudhary**
+[Portfolio](https://arushichaudhary.github.io/portfolio/) · [GitHub](https://github.com/arushichaudhary)
+
+---
+
+⭐ If you found this useful, consider giving it a star!

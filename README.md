@@ -1,4 +1,4 @@
-# 🕵️ Job Fraud Detection
+# 🕵️ TrustSeal
 
 An NLP-powered web app that analyzes job postings and flags potentially fraudulent listings in real time — built to help job seekers spot scams before they apply.
 

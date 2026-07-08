@@ -8,6 +8,25 @@ An NLP-powered web application that analyzes job postings and flags potentially 
 
 Online job scams are a real and growing problem. Fake postings are used to harvest personal data, charge bogus "processing fees," or run phishing schemes. This project uses a machine learning model trained on approximately 18,000 labeled job postings to classify a listing as fraudulent or genuine, giving users an instant risk assessment before they engage with a job ad.
 
+## Screenshots
+
+<p align="center">
+  <img src="hero.png" width="90%" />
+</p>
+
+<p align="center">
+  <img src="how-it-works.png" width="90%" />
+</p>
+
+<p align="center">
+  <img src="check-a-posting.png" width="90%" />
+</p>
+
+<p align="center">
+  <img src="result-verdict.png" width="45%" />
+  <img src="faq.png" width="45%" />
+</p>
+
 ## Features
 
 - Accepts a full job posting as input — title, location, department, description, requirements, benefits, employment type, experience, education, industry, and function
@@ -82,11 +101,20 @@ Then open `http://localhost:5000` in your browser.
 job-fraud-detection/
 ├── app.py                              # Flask application
 ├── model.py                            # ML model loading and prediction logic
+├── model.pkl                           # Trained model artifact
+├── vectorizer.pkl                      # Fitted vectorizer artifact
+├── clean_fakejobs.csv                  # Cleaned training dataset
 ├── jupyter/
 │   └── preprocess_and_train.ipynb      # Data preprocessing and model training
 ├── static/                             # CSS/JS assets
 ├── templates/                          # HTML templates
+├── hero.png                            # README screenshot
+├── how-it-works.png                    # README screenshot
+├── check-a-posting.png                 # README screenshot
+├── result-verdict.png                  # README screenshot
+├── faq.png                             # README screenshot
 ├── requirements.txt
+├── runtime.txt
 └── README.md
 ```
 
